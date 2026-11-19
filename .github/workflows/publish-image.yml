@@ -1,9 +1,11 @@
 name: Publish Docker image
 
-# Runs only when commits land on main (a merged pull request or a direct push). Pull requests never trigger it.
+# Runs when commits land on main (a merged pull request or a direct push), or by hand from the Actions tab
+# (Run workflow). Pull requests never trigger it.
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
