@@ -1,8 +1,9 @@
 import { LIMITS, type Region } from "./settings.js";
 
-/** Credentials and target for one client, taken from its request headers. */
+/** Credentials and target for one client, taken from its request headers or the connector-wide settings. */
 export interface OdpConnection {
-  apiKey: string;
+  /** Absent until someone configures a key; any call to ODP then fails with MissingApiKeyError. */
+  apiKey: string | undefined;
   region: Region;
   host: string;
 }
@@ -27,6 +28,18 @@ export class OdpApiError extends Error {
   }
 }
 
+/** Thrown when a tool needs ODP but no API key reached this connection. Its message is shown to the caller as-is. */
+export class MissingApiKeyError extends Error {
+  constructor() {
+    super(
+      "No ODP API key for this connection. On MintMCP, set ODP_API_KEY in this connector's settings " +
+        "(connector-wide or per user); other clients send it as the X-ODP-API-Key header. " +
+        "Use an ODP private API key (ODP: Settings > APIs).",
+    );
+    this.name = "MissingApiKeyError";
+  }
+}
+
 const RETRYABLE = new Set([429, 502, 503, 504]);
 
 export class OdpClient {
@@ -46,8 +59,10 @@ export class OdpClient {
   }
 
   private async send<T>(method: string, url: URL, body: unknown): Promise<T> {
+    const apiKey = this.connection.apiKey;
+    if (!apiKey) throw new MissingApiKeyError();
     const headers: Record<string, string> = {
-      "x-api-key": this.connection.apiKey,
+      "x-api-key": apiKey,
       accept: "application/json",
     };
     if (body !== undefined) headers["content-type"] = "application/json";

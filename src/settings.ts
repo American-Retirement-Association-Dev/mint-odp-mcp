@@ -26,6 +26,17 @@ const SettingsSchema = z.object({
   HOST: z.string().default("0.0.0.0"),
   /** If set, clients must also send `Authorization: Bearer <token>`. Use when the endpoint is reachable by others. */
   ODP_MCP_AUTH_TOKEN: z.string().min(16, "ODP_MCP_AUTH_TOKEN must be at least 16 characters").optional(),
+  /**
+   * Connector-wide ODP private API key, used when a request brings none (for example one key shared by a MintMCP hosted
+   * connector). A key in the request headers always wins. Never required at startup.
+   */
+  ODP_API_KEY: z.string().min(1).optional(),
+  /** Connector-wide ODP region (`us`, `eu` or `au`), used when a request brings none. Defaults to `us`. */
+  ODP_REGION: z
+    .string()
+    .transform((v) => v.trim().toLowerCase())
+    .pipe(z.enum(["us", "eu", "au"]))
+    .optional(),
   ODP_MCP_ALLOW_MUTATIONS: bool.default(false),
   ODP_MCP_ENABLE_EXPORTS: bool.default(true),
   /** Testing only: send every ODP request to this origin instead of the regional host. */

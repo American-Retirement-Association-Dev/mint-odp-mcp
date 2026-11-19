@@ -21,6 +21,12 @@ const INSTRUCTIONS = `Read access to Optimizely Data Platform (ODP) customer dat
 /** Request headers clients use to supply their ODP credentials. */
 const HEADER_API_KEY = "x-odp-api-key";
 const HEADER_REGION = "x-odp-region";
+/**
+ * The same values as sent by a MintMCP hosted connector, which delivers per-user env vars as `X-MintMCP-Env-<NAME>`
+ * headers (Node lowercases header names). Configure the per-user env vars as `ODP_API_KEY` and `ODP_REGION`.
+ */
+const MINT_HEADER_API_KEY = "x-mintmcp-env-odp_api_key";
+const MINT_HEADER_REGION = "x-mintmcp-env-odp_region";
 
 function buildServer(ctx: ToolContext, schemas: SchemaCache): McpServer {
   const server = new McpServer({ name: "odp-mcp", version: VERSION }, { instructions: INSTRUCTIONS });
@@ -44,15 +50,28 @@ function header(req: IncomingMessage, name: string): string | undefined {
   return (Array.isArray(value) ? value[0] : value)?.trim() || undefined;
 }
 
-/** Builds the caller's ODP connection from its request headers. */
+/**
+ * Builds the caller's ODP connection. The key and region come from, in order: the client's own X-ODP-* headers,
+ * MintMCP's per-user X-MintMCP-Env-* headers, then the connector-wide ODP_API_KEY / ODP_REGION settings.
+ *
+ * A missing key is not rejected here: MCP `initialize` and `tools/list` must succeed before anyone has configured one
+ * (MintMCP probes the server that way). Tools that call ODP fail with a clear message instead (see OdpClient).
+ */
 function connectionFrom(req: IncomingMessage, settings: Settings): OdpConnection {
-  const apiKey = header(req, HEADER_API_KEY);
-  // 400 rather than 401: a 401 makes OAuth-capable clients (mcp-remote, Claude Code) start an OAuth flow.
-  if (!apiKey) throw new HttpError(400, "Missing X-ODP-API-Key header: send your ODP private API key (ODP: Settings > APIs).");
+  const apiKey = header(req, HEADER_API_KEY) ?? header(req, MINT_HEADER_API_KEY) ?? settings.ODP_API_KEY;
 
-  const region = (header(req, HEADER_REGION)?.toLowerCase() ?? "us") as Region;
+  const region = (
+    header(req, HEADER_REGION) ??
+    header(req, MINT_HEADER_REGION) ??
+    settings.ODP_REGION ??
+    "us"
+  ).toLowerCase() as Region;
   if (!(region in REGION_HOSTS)) {
-    throw new HttpError(400, `Invalid X-ODP-Region header "${region}": expected one of ${Object.keys(REGION_HOSTS).join(", ")}.`);
+    // 400 rather than 401: a 401 makes OAuth-capable clients (mcp-remote, Claude Code) start an OAuth flow.
+    throw new HttpError(
+      400,
+      `Invalid ODP region "${region}" (X-ODP-Region header or ODP_REGION setting): expected one of ${Object.keys(REGION_HOSTS).join(", ")}.`,
+    );
   }
 
   const host = (settings.ODP_MCP_UPSTREAM_OVERRIDE ?? REGION_HOSTS[region]).replace(/\/+$/, "");
@@ -134,6 +153,7 @@ function main() {
   httpServer.listen(settings.PORT, settings.HOST, () => {
     const notes = [
       settings.ODP_MCP_AUTH_TOKEN ? "server token required" : "no server token",
+      settings.ODP_API_KEY ? "connector-wide ODP key set" : "ODP key per request",
       settings.ODP_MCP_ALLOW_MUTATIONS ? "mutations ENABLED" : "read-only",
       settings.ODP_MCP_UPSTREAM_OVERRIDE ? `upstream override ${settings.ODP_MCP_UPSTREAM_OVERRIDE}` : undefined,
     ].filter(Boolean);

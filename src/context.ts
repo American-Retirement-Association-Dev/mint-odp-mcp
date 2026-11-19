@@ -35,8 +35,9 @@ export function errorResult(err: unknown): CallToolResult {
     text = `${err.message}\n${JSON.stringify(err.body, null, 2)}`;
     if (err.status === 401 || err.status === 403) {
       text +=
-        "\n\nCheck that the X-ODP-API-Key header is a valid ODP private API key with access to this API (ODP: Settings > APIs), " +
-        "and that X-ODP-Region matches the account's region.";
+        "\n\nCheck that the ODP key (ODP_API_KEY in the MintMCP connector settings, or the X-ODP-API-Key header) is a valid " +
+        "ODP private API key with access to this API (ODP: Settings > APIs), and that the region (ODP_REGION or " +
+        "X-ODP-Region) matches the account's region.";
     }
   } else if (err instanceof Error && err.name === "TimeoutError") {
     text = "ODP API request timed out. Try a narrower query, fewer fields or a smaller page size.";

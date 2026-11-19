@@ -1,5 +1,7 @@
 # ODP MCP server
 
+> **ARA copy.** This repository is American Retirement Association's copy of [jacobpretorius/Opti.ODP.MCP](https://github.com/jacobpretorius/Opti.ODP.MCP) by Jacob Pretorius, imported at commit `2d0a474` (2026-09-28) under the MIT license (see [LICENSE](LICENSE)). ARA's changes let it run as a MintMCP hosted connector: the server listens on port 8000 in the image, and also reads the ODP key and region from MintMCP's per-user headers or connector-wide `ODP_API_KEY` / `ODP_REGION` settings. To deploy it on MintMCP, follow [DEPLOY-MINTMCP.md](DEPLOY-MINTMCP.md). The rest of this README is the original project's.
+
 An [MCP](https://modelcontextprotocol.io) server for **Optimizely Data Platform (ODP)**. It gives MCP clients (Claude Desktop, Claude Code, and others) read access to ODP data through the ODP GraphQL API and the read endpoints of the ODP REST API.
 
 It is written in TypeScript and runs as one long-running Docker container. The container holds no configuration and no secrets. Each client sends its own ODP API key and region with every request, so any number of clients, for any number of ODP accounts, can share one server.

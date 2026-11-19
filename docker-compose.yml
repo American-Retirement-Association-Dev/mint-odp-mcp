@@ -12,6 +12,8 @@ services:
       - "127.0.0.1:3000:3000"
     # Optional operator settings (none are required).
     environment:
+      # The image defaults to port 8000 for MintMCP; local runs keep 3000.
+      PORT: "3000"
       # Server token: if set, clients must also send "Authorization: Bearer <token>". It is a secret, so do not
       # write it here; put `ODP_MCP_AUTH_TOKEN=<long random string>` in a .env file next to this one (gitignored).
       ODP_MCP_AUTH_TOKEN: ${ODP_MCP_AUTH_TOKEN:-}
