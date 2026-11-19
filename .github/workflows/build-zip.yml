@@ -1,0 +1,48 @@
+name: Build Mintive zip
+
+# Builds the server into a zip for Mintive's "Container File" upload, so it can run on the public node:24-alpine image
+# without publishing ARA's own image. Runs on every push to main, or by hand from the Actions tab (Run workflow).
+# Download the "odp-mcp-mintive-<sha>" artifact from the run; that download is the zip to upload to Mintive.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v4
+        with:
+          # Same major version as the node:24-alpine image the zip runs on.
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+      - run: npm run build
+      # Keep only what the server needs at runtime.
+      - run: npm prune --omit=dev
+
+      # Mintive extracts the zip at /mnt, so this folder's contents land as /mnt/package.json, /mnt/dist, /mnt/node_modules.
+      # package.json must travel with dist: it marks the code as an ES module. The .bin links are not needed at runtime.
+      - name: Assemble bundle
+        run: |
+          mkdir bundle
+          cp package.json bundle/
+          cp -r dist bundle/
+          cp -r node_modules bundle/
+          rm -rf bundle/node_modules/.bin
+          echo "Bundle size: $(du -sh bundle | cut -f1)"
+
+      # The artifact download is itself a zip whose top level is the bundle's contents.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: odp-mcp-mintive-${{ github.sha }}
+          path: bundle/
+          retention-days: 90
+          if-no-files-found: error

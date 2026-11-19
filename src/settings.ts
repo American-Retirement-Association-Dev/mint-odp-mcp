@@ -22,7 +22,8 @@ const bool = z.enum(["true", "false"]).transform((v) => v === "true");
 
 /** Optional operator settings from environment variables. None are required. */
 const SettingsSchema = z.object({
-  PORT: z.coerce.number().int().min(1).max(65535).default(3000),
+  /** 8000 is what MintMCP hosted connectors expect, with or without ARA's Dockerfile (e.g. the zip on node:24-alpine). */
+  PORT: z.coerce.number().int().min(1).max(65535).default(8000),
   HOST: z.string().default("0.0.0.0"),
   /** If set, clients must also send `Authorization: Bearer <token>`. Use when the endpoint is reachable by others. */
   ODP_MCP_AUTH_TOKEN: z.string().min(16, "ODP_MCP_AUTH_TOKEN must be at least 16 characters").optional(),

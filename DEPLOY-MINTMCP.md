@@ -20,6 +20,28 @@ This connector gives Claude read access to Optimizely Data Platform (ODP) throug
 
 Where a key comes from, highest priority first: the `X-ODP-API-Key` header, then `X-MintMCP-Env-ODP_API_KEY`, then the `ODP_API_KEY` env var. The region follows the same order and falls back to `us`.
 
+## Quickest route: the zip upload (no Docker, nothing public)
+
+The `Build Mintive zip` workflow builds the server into a zip that runs on the public `node:24-alpine` image. ARA's code stays private on GitHub and in Mintive.
+
+1. In GitHub, open **Actions → Build Mintive zip**. Use the latest green run on `main`, or start one with **Run workflow**.
+2. On the run's page, under **Artifacts**, download `odp-mcp-mintive-<commit>`. The download is a zip holding `package.json`, `dist/` and `node_modules/`. Upload it as it is; don't unzip it and zip it again.
+3. In Mintive, set the connector's **Container** section:
+
+   | Field | Value |
+   | --- | --- |
+   | Container Image | `node:24-alpine` |
+   | Command | `node /mnt/dist/index.js` |
+   | Transport | HTTP Streamable (port 8000) |
+   | Streamable HTTP MCP Path | `/mcp` |
+   | Container File | the zip from step 2 |
+
+4. Set `ODP_API_KEY` (secret) under **Environment variables**, plus `ODP_REGION` if the account isn't in `us`. Then save or restart the server.
+
+To update later, run the workflow again and upload the new zip. If the zip route ever fails, skip ahead to the **Verify** step, which explains how to read the logs.
+
+The sections below are the image route: build a Docker image yourself and push it to Mintive's registry.
+
 ## 1. Build and test locally
 
 ```bash

@@ -74,7 +74,7 @@ No settings are required. `ODP_MCP_AUTH_TOKEN` is a secret, so put it in a `.env
 | `ODP_MCP_AUTH_TOKEN` | not set | If set (at least 16 characters), clients must also send `Authorization: Bearer <token>`. Use it when anyone other than you can reach the endpoint. |
 | `ODP_MCP_ALLOW_MUTATIONS` | `false` | Allow GraphQL mutations. |
 | `ODP_MCP_ENABLE_EXPORTS` | `true` | Show the export-job start tools. |
-| `PORT` / `HOST` | `3000` / `0.0.0.0` | Listen address inside the container. |
+| `PORT` / `HOST` | `8000` / `0.0.0.0` | Listen address inside the container (ARA default; docker compose sets 3000). |
 | `ODP_MCP_UPSTREAM_OVERRIDE` | not set | Testing only: send every ODP call to this URL instead of the regional ODP host. |
 
 ## Connect Claude Desktop
